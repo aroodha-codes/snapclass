@@ -84,6 +84,13 @@ def voice_attendance_dialog(selected_subject_id):
                 audio_bytes,
                 candidates_dict,
             )
+            if detected_scores is None:
+                st.session_state.voice_attendance_results = None
+                st.error(
+                    "Audio processing failed. No attendance results were "
+                    "created or saved. Please record again and retry."
+                )
+                return
 
             results = []
             attendance_to_log = []

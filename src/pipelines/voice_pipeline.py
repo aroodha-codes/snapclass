@@ -71,6 +71,6 @@ def process_bulk_audio(audio_bytes, candidates_dict, threshold=0.65):
                     identified_results[sid] = score
 
         return identified_results
-    except Exception as e:
-        st.error('Bulk process error')
-        return {}
+    except Exception:
+        # None means processing failed; {} means no speakers matched.
+        return None
