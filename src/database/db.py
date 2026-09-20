@@ -93,8 +93,14 @@ def create_attendance(logs):
     return response.data
 
 def get_attendance_for_teacher(teacher_id):
-    response = supabase.table('attendance_logs').select("*, subjects!inner(*)").eq('subjects.teacher_id', teacher_id).execute()
-    return response.data
+    response = (
+        supabase.table("attendance_logs")
+        .select("*, subjects!inner(*), students(name)")
+        .eq("subjects.teacher_id", teacher_id)
+        .execute()
+    )
+
+    return response.data or []
 
 def delete_subject(subject_id, teacher_id):
     """Delete an owned subject and cascade its dependent records.

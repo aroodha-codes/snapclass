@@ -255,54 +255,135 @@ def teacher_tab_manage_subjects():
         st.space()
 
 def teacher_tab_attendance_records():
-    st.header('Attendance Records')
+    st.header("Attendance Records")
 
-    teacher_id = st.session_state.teacher_data['teacher_id']
+    teacher_id = st.session_state.teacher_data["teacher_id"]
 
-    records = get_attendance_for_teacher(teacher_id)
+    try:
+        records = get_attendance_for_teacher(teacher_id)
+    except Exception:
+        st.error("Could not load attendance records. Please try again.")
+        return
 
     if not records:
+        st.info("No attendance records found.")
         return
-    
-    data = []
 
-    for r in records:
-        ts = r.get('timestamp')
+    sessions = {}
+    skipped_records = 0
 
-        data.append({
-            "ts_group": ts.split(".")[0] if ts else None,
-            "Time": datetime.fromisoformat(ts).strftime("%Y-%m-%d %I:%M %p") if ts else "N'A",
-            "Subject": r['subjects']['name'],
-            "Subject Code":r['subjects']['subject_code'],
-            "is_present": bool(r.get('is_present', False))
+    for record in records:
+        subject = record.get("subjects") or {}
+        subject_id = record.get("subject_id")
+        timestamp = record.get("timestamp")
+
+        # Do not combine records that lack a valid session identifier.
+        if subject_id is None or not timestamp:
+            skipped_records += 1
+            continue
+
+        # Preserve the complete timestamp, including fractional seconds.
+        session_key = (subject_id, timestamp)
+
+        if session_key not in sessions:
+            sessions[session_key] = {
+                "timestamp": timestamp,
+                "subject_name": subject.get("name") or "Unknown subject",
+                "subject_code": subject.get("subject_code") or "-",
+                "present": [],
+                "absent": [],
+            }
+
+        student = record.get("students") or {}
+        student_id = record.get("student_id")
+        student_name = student.get("name") or (
+            f"Unknown student (ID: {student_id})"
+        )
+
+        session = sessions[session_key]
+
+        if record.get("is_present"):
+            session["present"].append(student_name)
+        else:
+            session["absent"].append(student_name)
+
+    if skipped_records:
+        st.warning(
+            f"{skipped_records} attendance record(s) could not be displayed "
+            "because their subject ID or session timestamp is missing."
+        )
+
+    if not sessions:
+        st.info("No valid attendance sessions found.")
+        return
+
+    ordered_sessions = sorted(
+        sessions.values(),
+        key=lambda session: session["timestamp"],
+        reverse=True,
+    )
+
+    summary_rows = []
+
+    for session in ordered_sessions:
+        present_count = len(session["present"])
+        total_count = present_count + len(session["absent"])
+
+        summary_rows.append({
+            "Time": session["timestamp"],
+            "Subject": session["subject_name"],
+            "Subject Code": session["subject_code"],
+            "Attendance Stats": (
+                f"✅ {present_count} / {total_count} Students"
+            ),
         })
 
-
-    df = pd.DataFrame(data)
-
-
-
-    summary = (
-        df.groupby(['ts_group', 'Time', 'Subject', 'Subject Code'])
-        .agg(
-            Present_Count = ('is_present', 'sum'),
-            Total_Count =('is_present', 'count')
-        ).reset_index()
-
+    st.dataframe(
+        pd.DataFrame(summary_rows),
+        width="stretch",
+        hide_index=True,
     )
 
-    summary['Attendance Stats'] = (
-        "✅ " + summary['Present_Count'].astype(str) + " /"
-        + summary['Total_Count'].astype(str) + ' Students'
-    )
+    st.subheader("Session Details")
 
-    display_df = ( summary.sort_values(by='ts_group' ,ascending=False)
-                  [['Time', 'Subject', 'Subject Code', 'Attendance Stats']]
-                  )
-    
-    st.dataframe(display_df, width='stretch', hide_index=True)
+    for session in ordered_sessions:
+        present_count = len(session["present"])
+        absent_count = len(session["absent"])
+        total_count = present_count + absent_count
 
+        label = (
+            f"{session['subject_name']} "
+            f"({session['subject_code']}) | "
+            f"{session['timestamp']} | "
+            f"{present_count} / {total_count} Students"
+        )
 
+        with st.expander(label, expanded=False):
+            present_col, absent_col = st.columns(2)
+
+            with present_col:
+                st.markdown(f"**✅ Present ({present_count})**")
+
+                if session["present"]:
+                    for name in sorted(
+                        session["present"],
+                        key=str.casefold,
+                    ):
+                        st.text(f"✅ {name}")
+                else:
+                    st.caption("No students marked present.")
+
+            with absent_col:
+                st.markdown(f"**❌ Absent ({absent_count})**")
+
+                if session["absent"]:
+                    for name in sorted(
+                        session["absent"],
+                        key=str.casefold,
+                    ):
+                        st.text(f"❌ {name}")
+                else:
+                    st.caption("No students marked absent.")
 def login_teacher(username, password):
     if not username or not password:
         return False
