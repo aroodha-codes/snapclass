@@ -5,14 +5,7 @@ from src.ui.base_layout import style_background_dashboard, style_base_layout
 from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from src.components.subject_card import subject_card
-from src.database.db import (
-    check_teacher_exists,
-    create_teacher,
-    teacher_login,
-    get_teacher_subjects,
-    get_attendance_for_teacher,
-    get_subject_students,
-)
+from src.database.db import check_teacher_exists, create_teacher, teacher_login, get_teacher_subjects, get_attendance_for_teacher
 from src.components.dialog_create_subject import create_subject_dialog
 from src.components.dialog_share_subject import share_subject_dialog
 from src.components.dialog_add_photo import add_photos_dialog
@@ -197,110 +190,49 @@ def teacher_tab_take_attendance():
         if st.button('Use Voice Attendance', type='primary', width='stretch', icon=':material/mic:'):
             voice_attendance_dialog(selected_subject_id)
 
+
+
+
+
+
+
+
+
+
+
 def teacher_tab_manage_subjects():
-    teacher_id = st.session_state.teacher_data["teacher_id"]
-
+    teacher_id = st.session_state.teacher_data['teacher_id']
     col1, col2 = st.columns(2)
-
     with col1:
-        st.header("Manage Subjects")
+        st.header('Manage Subjects', width='stretch')
 
     with col2:
-        if st.button(
-            "Create New Subject",
-            width="stretch"
-        ):
+        if st.button('Create New Subject', width='stretch'):
             create_subject_dialog(teacher_id)
 
+
+    # LIST all SUBJECTS
     subjects = get_teacher_subjects(teacher_id)
-
-    if not subjects:
-        st.info("No subjects found. Create one above.")
-        return
-
-    for sub in subjects:
-
-        stats = [
-            ("🫂", "Students", sub["total_students"]),
-            ("🕰️", "Classes", sub["total_classes"]),
-        ]
-
-        def subject_actions(sub=sub):
-
-            col_students, col_share = st.columns(2)
-
-            with col_students:
-                show_students = st.toggle(
-                    "View Students",
-                    key=f"view_students_{sub['subject_id']}"
-                )
-
-            with col_share:
-                if st.button(
-                    "Share Code",
-                    key=f"share_{sub['subject_id']}",
-                    icon=":material/share:",
-                    width="stretch"
-                ):
-                    share_subject_dialog(
-                        sub["name"],
-                        sub["subject_code"]
-                    )
-
-            if show_students:
-                try:
-                    enrolled = get_subject_students(
-                        sub["subject_id"]
-                    )
-
-                    if not enrolled:
-                        st.info(
-                            "No students are enrolled in this subject yet."
-                        )
-                        return
-
-                    student_rows = []
-
-                    for item in enrolled:
-                        student = item.get("students")
-
-                        if student:
-                            student_rows.append({
-                                "Student ID": student["student_id"],
-                                "Name": student["name"],
-                            })
-
-                    if student_rows:
-                        st.dataframe(
-                            pd.DataFrame(student_rows),
-                            hide_index=True,
-                            width="stretch"
-                        )
-
-                        st.caption(
-                            f"Total enrolled students: "
-                            f"{len(student_rows)}"
-                        )
-                    else:
-                        st.info(
-                            "No student information available."
-                        )
-
-                except Exception as e:
-                    st.error(
-                        "Unable to load enrolled students."
-                    )
-                    st.exception(e)
-
+    if subjects:
+        for sub in subjects:
+            stats = [
+                ("🫂", "Students", sub['total_students']),
+                ("🕰️", "Classes", sub['total_classes']),
+            ]
+        def share_btn():
+            if st.button(f"Share Code: {sub['name']}", key=f"share_{sub['subject_code']}", icon=":material/share:"):
+                share_subject_dialog(sub['name'], sub['subject_code'])
             st.space()
 
         subject_card(
-            name=sub["name"],
-            code=sub["subject_code"],
-            section=sub["section"],
+            name = sub['name'],
+            code = sub['subject_code'],
+            section = sub['section'],
             stats=stats,
-            footer_callback=subject_actions
+            footer_callback=share_btn
         )
+    else:
+        st.info("NO SUBJECTS FOUND. CREATE ONE ABOVE")
 
 
 def teacher_tab_attendance_records():
