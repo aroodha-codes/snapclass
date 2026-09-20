@@ -96,3 +96,26 @@ def get_attendance_for_teacher(teacher_id):
     response = supabase.table('attendance_logs').select("*, subjects!inner(*)").eq('subjects.teacher_id', teacher_id).execute()
     return response.data
 
+def delete_subject(subject_id, teacher_id):
+    """Delete an owned subject and cascade its dependent records.
+
+    Apply the subject-delete SQL migration before using this function.
+    """
+    if subject_id is None or teacher_id is None:
+        raise ValueError("Subject and teacher are required.")
+
+    response = (
+        supabase.table("subjects")
+        .delete()
+        .eq("subject_id", subject_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+
+    if not response.data:
+        raise ValueError(
+            "Subject was not deleted. It may no longer exist "
+            "or access was denied."
+        )
+
+    return response.data
