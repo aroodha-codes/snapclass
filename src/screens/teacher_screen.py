@@ -158,6 +158,7 @@ def teacher_tab_take_attendance():
 
                 if not enrolled_students:
                     st.warning('No students enrolled in this course')
+                    return
                 else:
 
                     results, attendance_to_log  = [], []
