@@ -35,3 +35,4 @@ def show_attendance_result(df, logs):
 def attendance_result_dialog(df, logs):
     show_attendance_result(df, logs)
 
+

@@ -1,14 +1,24 @@
-setuptools==70.0.0
-streamlit==1.64.0
-supabase==2.31.0
-bcrypt==5.0.0
-dlib-bin==20.0.1
-face_recognition_models @ git+https://github.com/ageitgey/face_recognition_models@e67de717267507d1e9246de95692eb8be736ab61
-numpy==2.5.3
-pandas==3.0.6
-scikit-learn==1.9.1
-Pillow==12.3.0
-librosa==1.0.0
-Resemblyzer==0.1.4
-segno==1.6.6
-soundfile==0.14.0
+streamlit
+# Utilitites 
+numpy
+pandas
+
+# FACE RECOGNITION
+scikit-learn
+dlib-bin
+git+https://github.com/ageitgey/face_recognition_models
+setuptools<70.0.0
+
+
+supabase
+bcrypt
+
+
+
+segno
+pillow
+
+
+
+librosa
+resemblyzer

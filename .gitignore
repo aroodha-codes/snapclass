@@ -1,13 +1,11 @@
-
 # Virtual environments
-venv/
 .venv/
+venv/
 env/
 
 # Python cache
 __pycache__/
 *.py[cod]
-*$py.class
 
 # Environment variables / secrets
 .env
@@ -17,18 +15,18 @@ __pycache__/
 # Streamlit secrets
 .streamlit/secrets.toml
 
-# IDE
+# IDE files
 .vscode/
 .idea/
 
-# Build output
-dist/
-build/
-*.egg-info/
-
-# Testing/cache
+# Test/cache files
 .pytest_cache/
 .coverage
+
+# Build files
+build/
+dist/
+*.egg-info/
 
 # OS files
 .DS_Store

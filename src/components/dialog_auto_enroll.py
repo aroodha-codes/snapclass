@@ -41,3 +41,4 @@ def auto_enroll_dialog(subject_code):
             st.query_params.clear()
             time.sleep(2)
             st.rerun()
+

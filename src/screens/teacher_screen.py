@@ -190,6 +190,16 @@ def teacher_tab_take_attendance():
         if st.button('Use Voice Attendance', type='primary', width='stretch', icon=':material/mic:'):
             voice_attendance_dialog(selected_subject_id)
 
+
+
+
+
+
+
+
+
+
+
 def teacher_tab_manage_subjects():
     teacher_id = st.session_state.teacher_data['teacher_id']
     col1, col2 = st.columns(2)
@@ -209,10 +219,10 @@ def teacher_tab_manage_subjects():
                 ("🫂", "Students", sub['total_students']),
                 ("🕰️", "Classes", sub['total_classes']),
             ]
-            def share_btn():
-                if st.button(f"Share Code: {sub['name']}", key=f"share_{sub['subject_code']}", icon=":material/share:"):
-                    share_subject_dialog(sub['name'], sub['subject_code'])
-                st.space()
+        def share_btn():
+            if st.button(f"Share Code: {sub['name']}", key=f"share_{sub['subject_code']}", icon=":material/share:"):
+                share_subject_dialog(sub['name'], sub['subject_code'])
+            st.space()
 
         subject_card(
             name = sub['name'],

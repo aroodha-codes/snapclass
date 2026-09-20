@@ -52,16 +52,7 @@ def get_teacher_subjects(teacher_id):
     response = supabase.table('subjects').select("*, subject_students(count), attendance_logs(timestamp)").eq("teacher_id", teacher_id).execute()
     subjects = response.data
 
-def get_subject_students(subject_id):
-    response = (
-        supabase
-        .table("subject_students")
-        .select("student_id, students(student_id, name)")
-        .eq("subject_id", subject_id)
-        .execute()
-    )
 
-    return response.data
     for sub in subjects:
         sub['total_students'] = sub.get("subject_students", [{}])[0].get('count', 0) if sub.get('subject_students') else 0
         attendance = sub.get('attendance_logs', [])
@@ -104,3 +95,4 @@ def create_attendance(logs):
 def get_attendance_for_teacher(teacher_id):
     response = supabase.table('attendance_logs').select("*, subjects!inner(*)").eq('subjects.teacher_id', teacher_id).execute()
     return response.data
+
