@@ -1,13 +1,21 @@
 import streamlit as st
 
-def footer_home():
+
+def _render_footer():
     st.markdown(
-        "<div style='text-align:center; margin-top:2rem; color:#E0E3FF;'>SnapClass • AI-Powered Smart Attendance</div>",
-        unsafe_allow_html=True
+        """
+        <div class="sc-footer">
+            <span><strong>SnapClass</strong></span>
+            <span>Face recognition · Attendance management</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
+
+def footer_home():
+    _render_footer()
+
+
 def footer_dashboard():
-    st.markdown(
-        "<div style='text-align:center; margin-top:2rem; color:#666;'>SnapClass • AI-Powered Smart Attendance</div>",
-        unsafe_allow_html=True
-    )
+    _render_footer()
