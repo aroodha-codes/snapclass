@@ -212,9 +212,6 @@ Six query images were tested: five contained seven evaluated faces, and one cont
 [View results as CSV](docs/evaluation/results.csv) ·
 [Download the spreadsheet](docs/evaluation/SnapClass_Evaluation.xlsx)
 
-### Example result
-
-![Face identification result for T01](docs/evaluation/screenshots/T01.png)
 
 ## Failure cases and limitations
 
