@@ -1,0 +1,9 @@
+Test ID,Expected Name,Predicted Name,Distance,Outcome
+T01,Prajwal,Prajwal,0.4587,Correct identification
+T02-F1,Siddharoodha,Siddharoodha,0.4461,Correct identification
+T02-F2,Unknown,Unknown,0.6072,Correct rejection
+T02-F3,Unknown,Unknown,0.6486,Correct rejection
+T03,Karthik N,Karthik N,0.3919,Correct identification
+T04,Unknown,Unknown,0.6329,Correct rejection
+T05,Unknown,Unknown,0.618,Correct rejection
+T06,No face,No face detected,N/A,Correct no-face handling
