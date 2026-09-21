@@ -104,7 +104,42 @@ def teacher_tab_take_attendance():
     subjects = get_teacher_subjects(teacher_id)
 
     if not subjects:
-        st.warning('You havent created any subjects yet! Please create one to begin!')
+        with st.container(
+            border=True,
+            key="sc_empty_subjects",
+        ):
+            st.markdown(
+                '<div class="sc-empty-label">GET STARTED</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.subheader("Create your first subject")
+            st.write(
+                "Set up a subject, share its enrollment code with "
+                "students, and start recording attendance."
+            )
+
+            step1, step2, step3 = st.columns(3, gap="medium")
+
+            with step1:
+                st.markdown("**01 · Create a subject**")
+                st.caption("Add its name, subject code, and section.")
+
+            with step2:
+                st.markdown("**02 · Invite students**")
+                st.caption("Share the subject code or enrollment link.")
+
+            with step3:
+                st.markdown("**03 · Take attendance**")
+                st.caption("Analyze classroom photos and review results.")
+
+            if st.button(
+                "Create First Subject",
+                type="primary",
+                key="create_first_subject",
+            ):
+                create_subject_dialog(teacher_id)
+
         return
     
     subject_options = {f"{s['name']} - {s['subject_code']}": s['subject_id'] for s in subjects}

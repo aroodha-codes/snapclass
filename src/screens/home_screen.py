@@ -18,28 +18,45 @@ def home_screen():
 
     st.markdown(
         """
-        <div class="sc-home-intro">
-            <div class="sc-section-label">Attendance management</div>
-            <h1>Your classroom, accounted for.</h1>
+        <section class="sc-hero">
+            <div class="sc-hero-label">
+                Classroom attendance workspace
+            </div>
+            <h1>Less time on roll calls.<br>More time for class.</h1>
             <p>
-                Manage subjects, register students, and review
-                attendance in one workspace.
+                Register students, identify faces, and keep
+                attendance records organised by subject.
             </p>
-        </div>
+            <div class="sc-hero-tags">
+                <span class="sc-hero-tag">Face identification</span>
+                <span class="sc-hero-tag">Subject management</span>
+                <span class="sc-hero-tag">Attendance records</span>
+            </div>
+        </section>
         """,
         unsafe_allow_html=True,
     )
 
-    student_col, teacher_col = st.columns(2, gap="large")
+    student_col, teacher_col = st.columns(2, gap="medium")
 
     with student_col:
-        with st.container(border=True):
-            st.subheader("Student Portal")
-            st.write(
-                "Register your face, join subjects, and check "
-                "your attendance."
+        with st.container(
+            border=True,
+            key="sc_student_portal",
+        ):
+            st.markdown(
+                """
+                <div class="sc-portal-symbol" aria-hidden="true">S</div>
+                <div class="sc-portal-label">For students</div>
+                """,
+                unsafe_allow_html=True,
             )
-            st.caption("For students and new registrations")
+
+            st.subheader("Your classes. Your attendance.")
+            st.write(
+                "Create your face profile, join a subject, "
+                "and keep track of your attendance."
+            )
 
             if st.button(
                 "Open Student Portal",
@@ -51,13 +68,24 @@ def home_screen():
                 st.rerun()
 
     with teacher_col:
-        with st.container(border=True):
-            st.subheader("Teacher Portal")
-            st.write(
-                "Manage subjects, take attendance, and review "
-                "student records."
+        with st.container(
+            border=True,
+            key="sc_teacher_portal",
+        ):
+            st.markdown(
+                """
+                <div class="sc-portal-symbol teacher"
+                     aria-hidden="true">T</div>
+                <div class="sc-portal-label">For teachers</div>
+                """,
+                unsafe_allow_html=True,
             )
-            st.caption("For teachers and class administrators")
+
+            st.subheader("A clear view of every class.")
+            st.write(
+                "Manage your subjects, take attendance, "
+                "and review present and absent students."
+            )
 
             if st.button(
                 "Open Teacher Portal",
@@ -68,22 +96,32 @@ def home_screen():
                 st.session_state["login_type"] = "teacher"
                 st.rerun()
 
-    st.divider()
+    st.space()
 
-    with st.container(border=True):
-        st.subheader("Face Identification")
-        st.write(
-            "Check a photo against registered face profiles. "
-            "View the matched name or an Unknown result."
+    with st.container(
+        border=True,
+        key="sc_identification_panel",
+    ):
+        description_col, action_col = st.columns(
+            [3, 2],
+            vertical_alignment="center",
         )
-        st.caption("Identification only — attendance is not recorded.")
 
-        if st.button(
-            "Test Face Identification",
-            type="secondary",
-            key="open_face_identification",
-            width="stretch",
-        ):
-            face_identification_dialog()
+        with description_col:
+            st.subheader("Try face identification")
+            st.write(
+                "Upload a photo to see a matched name or an Unknown "
+                "result, along with the nearest-match distance."
+            )
+            st.caption("This test does not record attendance.")
+
+        with action_col:
+            if st.button(
+                "Identify a Face",
+                type="secondary",
+                key="open_face_identification",
+                width="stretch",
+            ):
+                face_identification_dialog()
 
     footer_home()

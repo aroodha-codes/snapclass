@@ -291,6 +291,156 @@ def style_base_layout():
                     padding: 18px;
                 }
             }
+            /* Refined page spacing */
+.block-container {
+    max-width: 1120px;
+    padding-top: 2rem;
+}
+
+.stApp {
+    background-color: #F3F5F9;
+}
+
+/* Home page introduction */
+.sc-hero {
+    position: relative;
+    overflow: hidden;
+    margin: 24px 0;
+    padding: 30px 34px;
+    border-radius: 18px;
+    background: linear-gradient(115deg, #142D50, #214D79);
+    color: #FFFFFF;
+}
+
+.sc-hero-label {
+    color: #BCD5EE;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.sc-hero h1 {
+    color: #FFFFFF !important;
+    font-size: 2.1rem !important;
+    line-height: 1.2 !important;
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+}
+
+.sc-hero p {
+    max-width: 650px;
+    color: #DEE9F5;
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.sc-hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 22px;
+}
+
+.sc-hero-tag {
+    padding: 5px 11px;
+    border: 1px solid #587899;
+    border-radius: 6px;
+    color: #E9F1FA;
+    font-size: 12px;
+}
+
+/* Scope these styles to the new home-page containers */
+.st-key-sc_student_portal,
+.st-key-sc_teacher_portal,
+.st-key-sc_identification_panel,
+.st-key-sc_empty_subjects {
+    background-color: #FFFFFF;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(20, 45, 80, 0.045);
+}
+
+.st-key-sc_student_portal {
+    border-top: 3px solid #2458C6 !important;
+}
+
+.st-key-sc_teacher_portal {
+    border-top: 3px solid #218578 !important;
+}
+
+.st-key-sc_identification_panel {
+    border-left: 3px solid #2458C6 !important;
+}
+
+.sc-portal-label {
+    color: #66788E;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.sc-portal-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    background: #EAF0FF;
+    color: #2458C6;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.sc-portal-symbol.teacher {
+    background: #E8F5F1;
+    color: #177166;
+}
+
+.sc-empty-label {
+    display: inline-block;
+    padding: 4px 9px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: #EDF3FF;
+    color: #2458C6;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+}
+
+/* Give existing subject cards more definition */
+.sc-subject-card {
+    box-shadow: 0 3px 14px rgba(20, 45, 80, 0.035);
+    border-radius: 12px;
+}
+
+.sc-brand-mark {
+    box-shadow: 0 3px 8px rgba(24, 59, 112, 0.12);
+}
+
+.sc-footer {
+    margin-top: 28px;
+}
+
+@media (max-width: 640px) {
+    .sc-hero {
+        padding: 24px 20px;
+        border-radius: 12px;
+    }
+
+    .sc-hero h1 {
+        font-size: 1.65rem !important;
+    }
+
+    .block-container {
+        padding-top: 1.5rem;
+    }
+}
         </style>
         """,
         unsafe_allow_html=True,
