@@ -6,7 +6,11 @@ from src.components.header import header_dashboard
 from src.components.footer import footer_dashboard
 from PIL import Image
 import numpy as np
-from src.pipelines.face_pipeline import predict_attendance, get_face_embeddings, train_classifier
+from src.pipelines.face_pipeline import (
+    predict_attendance,
+    get_face_embeddings,
+    get_trained_model,
+)
 from src.pipelines.voice_pipeline import get_voice_embedding
 from src.database.db import get_all_students, create_student, get_student_subjects, get_student_attendance, unenroll_student_to_subject
 import time
@@ -23,8 +27,8 @@ def student_dashboard():
     with c2:
         st.subheader(f"""Welcome, {student_data['name']} """)
         if st.button("Logout", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
-            st.session_state['is_logged_in'] = False
-            del st.session_state.student_data 
+            st.session_state.clear()
+            st.query_params.clear()
             st.rerun()
 
 
@@ -88,101 +92,217 @@ def student_dashboard():
 
 
 def student_screen():
-
-
     style_background_dashboard()
     style_base_layout()
-
 
     if "student_data" in st.session_state:
         student_dashboard()
         return
-    
-    c1, c2 = st.columns(2, vertical_alignment='center', gap='xxlarge')
+
+    c1, c2 = st.columns(
+        2,
+        vertical_alignment="center",
+        gap="xxlarge",
+    )
+
     with c1:
         header_dashboard()
+
     with c2:
-        if st.button("Go back to Home", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
-            st.session_state['login_type'] = None
+        if st.button(
+            "Go back to Home",
+            type="secondary",
+            key="loginbackbtn",
+            shortcut="control+backspace",
+        ):
+            st.session_state["login_type"] = None
             st.rerun()
 
-    st.header('Login using FaceID', text_alignment='center')
+    st.header("Login using FaceID", text_alignment="center")
     st.space()
     st.space()
-    
+
     show_registration = False
     photo_source = st.camera_input("Position your face in the center")
 
-    if photo_source:
-        img = np.array(Image.open(photo_source))
+    if photo_source is not None:
+        matched_student = None
 
-        with st.spinner('AI is scanning..'):
-            detected, all_ids, num_faces = predict_attendance(img)
+        try:
+            photo_source.seek(0)
+            img = np.array(
+                Image.open(photo_source).convert("RGB")
+            )
 
-            if num_faces == 0:
-                st.warning('Face not found!')
-            elif num_faces >1:
-                st.warning('Multiple faces found')
+            with st.spinner("AI is scanning.."):
+                detected, _, num_faces = predict_attendance(img)
+
+                if num_faces == 1 and detected:
+                    student_id = next(iter(detected))
+                    all_students = get_all_students() or []
+
+                    matched_student = next(
+                        (
+                            student
+                            for student in all_students
+                            if student["student_id"] == student_id
+                        ),
+                        None,
+                    )
+
+        except Exception:
+            st.error(
+                "Could not complete face login. Please check your "
+                "connection and try taking another photo."
+            )
+            footer_dashboard()
+            return
+
+        if num_faces == 0:
+            st.warning("Face not found!")
+
+        elif num_faces > 1:
+            st.warning("Multiple faces found")
+
+        elif detected:
+            if matched_student is None:
+                st.error(
+                    "The matched profile could not be loaded. "
+                    "Please try again."
+                )
             else:
-                if detected:
-                    student_id = list(detected.keys())[0]
-                    all_students = get_all_students()
-                    student = next((s for s in all_students if s['student_id']==student_id), None)
+                st.session_state.is_logged_in = True
+                st.session_state.user_role = "student"
+                st.session_state.student_data = matched_student
 
-                    if student:
-                        st.session_state.is_logged_in = True
-                        st.session_state.user_role = 'student'
-                        st.session_state.student_data = student
-                        st.toast(f'Welcome Back {student['name']}')
-                        time.sleep(1)
-                        st.rerun()
-                else:
-                    st.info('Face not recognized! You might be a new student!')
-                    show_registration = True
+                st.toast(
+                    f"Welcome Back {matched_student['name']}"
+                )
+                time.sleep(1)
+                st.rerun()
+
+        else:
+            st.info(
+                "Face not recognized! You might be a new student!"
+            )
+            show_registration = True
+
     if show_registration:
         with st.container(border=True):
-            st.header('Register new Profile')
-            new_name = st.text_input("Enter your name", placeholder='E.g. Hamza Rizvi')
+            st.header("Register new Profile")
 
-            st.subheader('Optional : Voice Enrollment')
-            st.info("Enroll your for voice only attendance")
+            new_name = st.text_input(
+                "Enter your name",
+                placeholder="E.g. Hamza Rizvi",
+            )
 
+            st.subheader("Optional : Voice Enrollment")
+            st.info("Register your voice for voice attendance.")
 
             audio_data = None
 
             try:
-                audio_data = st.audio_input('Record a short phrase like I am present, My name is Akash.')
+                audio_data = st.audio_input(
+                    "Record a short phrase like I am present, "
+                    "My name is Akash."
+                )
             except Exception:
-                st.error('Audio Data failed!')
+                st.error(
+                    "Audio recording is unavailable. "
+                    "You can still register your face."
+                )
 
-            if st.button('Create Account', type='primary'):
-                if new_name:
-                    with st.spinner('Creating profile..'):
-                        img = np.array(Image.open(photo_source))
-                        encodings= get_face_embeddings(img)
-                        if encodings:
-                            face_emb = encodings[0].tolist()
+            if st.button("Create Account", type="primary"):
+                clean_name = new_name.strip()
 
-                            voice_emb = None
-                            if audio_data:
-                                voice_emb = get_voice_embedding(audio_data.read())
+                if not clean_name:
+                    st.warning(
+                        "Please enter a name, not just spaces."
+                    )
+                    footer_dashboard()
+                    return
 
-                            response_data = create_student(new_name, face_embedding=face_emb, voice_embedding=voice_emb)
+                try:
+                    photo_source.seek(0)
+                    img = np.array(
+                        Image.open(photo_source).convert("RGB")
+                    )
 
-                            if response_data:
-                                train_classifier()
-                                st.session_state.is_logged_in = True
-                                st.session_state.user_role = 'student'
-                                st.session_state.student_data = response_data[0]
-                                st.toast(f'Profile Created! Hi {new_name}!')
-                                time.sleep(1)
-                                st.rerun()
-                        else:
-                            st.error('Couldnt capture your facial features for registration')
+                    with st.spinner(
+                        "Checking your enrollment photo..."
+                    ):
+                        encodings = get_face_embeddings(img)
 
-                else:
-                    st.warning('Please enter your name!')
+                except Exception:
+                    st.error(
+                        "Could not process your enrollment photo. "
+                        "Please take another photo and try again."
+                    )
+                    footer_dashboard()
+                    return
 
+                if len(encodings) != 1:
+                    st.warning(
+                        "Registration requires exactly one visible "
+                        "face. Please take another photo."
+                    )
+                    footer_dashboard()
+                    return
 
-        
+                face_emb = encodings[0].tolist()
+                voice_emb = None
+
+                if audio_data is not None:
+                    try:
+                        voice_emb = get_voice_embedding(
+                            audio_data.getvalue()
+                        )
+                    except Exception:
+                        voice_emb = None
+
+                    if voice_emb is None:
+                        st.warning(
+                            "Voice enrollment failed. Registration "
+                            "will continue with your face only."
+                        )
+
+                try:
+                    with st.spinner("Creating profile..."):
+                        response_data = create_student(
+                            clean_name,
+                            face_embedding=face_emb,
+                            voice_embedding=voice_emb,
+                        )
+
+                except Exception:
+                    st.error(
+                        "Registration could not be confirmed. "
+                        "The database may have received the request. "
+                        "Retake your photo to check whether face "
+                        "login recognizes you before attempting "
+                        "registration again."
+                    )
+                    footer_dashboard()
+                    return
+
+                if not response_data:
+                    st.error(
+                        "No profile was returned by the database. "
+                        "Retake your photo to check whether "
+                        "registration completed before trying again."
+                    )
+                    footer_dashboard()
+                    return
+
+                # Reload enrolled faces on the next recognition.
+                get_trained_model.clear()
+
+                st.session_state.is_logged_in = True
+                st.session_state.user_role = "student"
+                st.session_state.student_data = response_data[0]
+
+                st.toast(f"Profile Created! Hi {clean_name}!")
+                time.sleep(1)
+                st.rerun()
+
     footer_dashboard()
