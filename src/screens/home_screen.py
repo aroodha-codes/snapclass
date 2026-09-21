@@ -2,6 +2,9 @@ import streamlit as st
 from src.components.header import header_home
 from src.components.footer import footer_home
 from src.ui.base_layout import style_base_layout, style_background_home
+from src.components.dialog_face_identification import (
+    face_identification_dialog,
+)
 def home_screen():
 
 
@@ -25,5 +28,7 @@ def home_screen():
         if st.button('Teacher Portal', type='primary', icon=':material/arrow_outward:', icon_position='right'):
             st.session_state['login_type']='teacher'
             st.rerun()
+        if st.button("Test Face Identification",key="open_face_identification",width="stretch",):
+            face_identification_dialog()
 
     footer_home()
