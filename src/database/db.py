@@ -125,3 +125,25 @@ def delete_subject(subject_id, teacher_id):
         )
 
     return response.data
+
+def get_subject_students(subject_id, teacher_id):
+    # Verify that the subject belongs to the current teacher.
+    subject_response = (
+        supabase.table("subjects")
+        .select("subject_id")
+        .eq("subject_id", subject_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+
+    if not subject_response.data:
+        raise ValueError("Subject not found or access denied.")
+
+    response = (
+        supabase.table("subject_students")
+        .select("student_id, students(name)")
+        .eq("subject_id", subject_id)
+        .execute()
+    )
+
+    return response.data or []
