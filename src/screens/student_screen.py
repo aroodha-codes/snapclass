@@ -129,13 +129,17 @@ def student_screen():
         key="student_entry_mode",
     )
 
+    # Temporary stricter login threshold; validate with real test photos.
+    login_threshold = 0.5
     show_registration = False
-    photo_source = st.camera_input("Position your face in the center")
+
+    photo_source = st.camera_input(
+        "Position your face in the center",
+        key=f"student_camera_{entry_mode}",
+    )
 
     if photo_source is not None:
         if entry_mode == "Register new profile":
-            # The existing registration code below will check that
-            # this photo contains exactly one face before saving it.
             show_registration = True
 
         else:
@@ -144,56 +148,148 @@ def student_screen():
                 img = np.array(Image.open(photo_source).convert("RGB"))
 
                 with st.spinner("Scanning your face..."):
-                    detected, _, num_faces = predict_attendance(img)
+                    embeddings = get_face_embeddings(img)
 
-                if num_faces == 0:
+                if len(embeddings) == 0:
                     st.warning("Face not found. Please take another photo.")
 
-                elif num_faces > 1:
+                elif len(embeddings) > 1:
                     st.warning(
-                        "Multiple faces found. Please take a photo "
-                        "containing only your face."
-                    )
-
-                elif not detected:
-                    st.info(
-                        "No registered profile matched this photo. "
-                        "Select 'Register new profile' above to create one."
+                        "Please take a photo containing only your face."
                     )
 
                 else:
-                    student_id = next(iter(detected))
-                    all_students = get_all_students() or []
+                    # Keep each fresh database profile with its embedding.
+                    profiles = [
+                        student
+                        for student in (get_all_students() or [])
+                        if student.get("face_embedding") is not None
+                    ]
 
-                    matched_student = next(
-                        (
-                            student
-                            for student in all_students
-                            if student["student_id"] == student_id
-                        ),
-                        None,
-                    )
-
-                    if matched_student is None:
-                        st.error(
-                            "The matched profile could not be loaded. "
-                            "Please try again."
-                        )
-                    else:
+                    if not profiles:
                         st.info(
-                            f"Possible match: {matched_student['name']}. "
-                            "Continue only if this is your profile."
+                            "No registered face profiles are available. "
+                            "Select 'Register new profile' above."
                         )
 
-                        if st.button(
-                            f"Continue as {matched_student['name']}",
-                            type="primary",
-                            key="confirm_student_login",
+                    else:
+                        vectors = []
+
+                        for student in profiles:
+                            vector = np.asarray(
+                                student["face_embedding"],
+                                dtype=np.float64,
+                            )
+
+                            if (
+                                vector.shape != (128,)
+                                or not np.all(np.isfinite(vector))
+                            ):
+                                raise ValueError(
+                                    "A stored face profile is invalid. "
+                                    "Its embedding must be checked "
+                                    "before login."
+                                )
+
+                            vectors.append(vector)
+
+                        query = np.asarray(
+                            embeddings[0],
+                            dtype=np.float64,
+                        )
+
+                        if (
+                            query.shape != (128,)
+                            or not np.all(np.isfinite(query))
                         ):
-                            st.session_state.is_logged_in = True
-                            st.session_state.user_role = "student"
-                            st.session_state.student_data = matched_student
-                            st.rerun()
+                            raise ValueError(
+                                "The captured face could not be processed "
+                                "correctly. Please take another photo."
+                            )
+
+                        distances = np.linalg.norm(
+                            np.vstack(vectors) - query,
+                            axis=1,
+                        )
+
+                        best_index = int(np.argmin(distances))
+                        best_distance = float(distances[best_index])
+                        matched_student = profiles[best_index]
+
+                        tied = np.count_nonzero(
+                            np.isclose(
+                                distances,
+                                best_distance,
+                                rtol=0,
+                                atol=1e-8,
+                            )
+                        ) > 1
+
+                        with st.expander(
+                            "Match details (troubleshooting)"
+                        ):
+                            st.write(
+                                "Registered face profiles:",
+                                len(profiles),
+                            )
+                            st.write(
+                                "Login distance threshold:",
+                                login_threshold,
+                            )
+
+                            st.dataframe(
+                                [
+                                    {
+                                        "Student ID": str(
+                                            profiles[int(i)]["student_id"]
+                                        ),
+                                        "Name": profiles[int(i)].get(
+                                            "name", ""
+                                        ),
+                                        "Distance": round(
+                                            float(distances[i]), 6
+                                        ),
+                                    }
+                                    for i in np.argsort(distances)[:5]
+                                ],
+                                hide_index=True,
+                            )
+
+                        if tied:
+                            st.warning(
+                                "Multiple profiles have the same closest "
+                                "distance. Login is blocked until the "
+                                "profiles are checked."
+                            )
+
+                        elif best_distance > login_threshold:
+                            st.info(
+                                "No sufficiently close face match was found. "
+                                "Retake your photo if you already have a "
+                                "profile, or select 'Register new profile' "
+                                "if you are new."
+                            )
+
+                        else:
+                            st.info(
+                                f"Possible match: {matched_student['name']}. "
+                                "Continue only if this is your profile."
+                            )
+
+                            if st.button(
+                                f"Continue as {matched_student['name']}",
+                                type="primary",
+                                key="confirm_student_login",
+                            ):
+                                st.session_state.is_logged_in = True
+                                st.session_state.user_role = "student"
+                                st.session_state.student_data = (
+                                    matched_student
+                                )
+                                st.rerun()
+
+            except ValueError as exc:
+                st.error(str(exc))
 
             except Exception:
                 st.error(
