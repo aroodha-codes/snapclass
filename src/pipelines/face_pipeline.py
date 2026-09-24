@@ -8,6 +8,7 @@ from PIL import Image
 FACE_MATCH_THRESHOLD = 0.6
 
 
+
 @st.cache_resource
 def load_dlib_models():
     detector = dlib.get_frontal_face_detector()
