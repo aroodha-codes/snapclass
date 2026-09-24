@@ -122,22 +122,46 @@ def student_screen():
     st.space()
     st.space()
 
+    entry_mode = st.radio(
+        "What would you like to do?",
+        ["Log in", "Register new profile"],
+        horizontal=True,
+        key="student_entry_mode",
+    )
+
     show_registration = False
     photo_source = st.camera_input("Position your face in the center")
 
     if photo_source is not None:
-        matched_student = None
+        if entry_mode == "Register new profile":
+            # The existing registration code below will check that
+            # this photo contains exactly one face before saving it.
+            show_registration = True
 
-        try:
-            photo_source.seek(0)
-            img = np.array(
-                Image.open(photo_source).convert("RGB")
-            )
+        else:
+            try:
+                photo_source.seek(0)
+                img = np.array(Image.open(photo_source).convert("RGB"))
 
-            with st.spinner("AI is scanning.."):
-                detected, _, num_faces = predict_attendance(img)
+                with st.spinner("Scanning your face..."):
+                    detected, _, num_faces = predict_attendance(img)
 
-                if num_faces == 1 and detected:
+                if num_faces == 0:
+                    st.warning("Face not found. Please take another photo.")
+
+                elif num_faces > 1:
+                    st.warning(
+                        "Multiple faces found. Please take a photo "
+                        "containing only your face."
+                    )
+
+                elif not detected:
+                    st.info(
+                        "No registered profile matched this photo. "
+                        "Select 'Register new profile' above to create one."
+                    )
+
+                else:
                     student_id = next(iter(detected))
                     all_students = get_all_students() or []
 
@@ -150,43 +174,32 @@ def student_screen():
                         None,
                     )
 
-        except Exception:
-            st.error(
-                "Could not complete face login. Please check your "
-                "connection and try taking another photo."
-            )
-            footer_dashboard()
-            return
+                    if matched_student is None:
+                        st.error(
+                            "The matched profile could not be loaded. "
+                            "Please try again."
+                        )
+                    else:
+                        st.info(
+                            f"Possible match: {matched_student['name']}. "
+                            "Continue only if this is your profile."
+                        )
 
-        if num_faces == 0:
-            st.warning("Face not found!")
+                        if st.button(
+                            f"Continue as {matched_student['name']}",
+                            type="primary",
+                            key="confirm_student_login",
+                        ):
+                            st.session_state.is_logged_in = True
+                            st.session_state.user_role = "student"
+                            st.session_state.student_data = matched_student
+                            st.rerun()
 
-        elif num_faces > 1:
-            st.warning("Multiple faces found")
-
-        elif detected:
-            if matched_student is None:
+            except Exception:
                 st.error(
-                    "The matched profile could not be loaded. "
-                    "Please try again."
+                    "Could not complete face login. Please check your "
+                    "connection and take another photo."
                 )
-            else:
-                st.session_state.is_logged_in = True
-                st.session_state.user_role = "student"
-                st.session_state.student_data = matched_student
-
-                st.toast(
-                    f"Welcome Back {matched_student['name']}"
-                )
-                time.sleep(1)
-                st.rerun()
-
-        else:
-            st.info(
-                "Face not recognized! You might be a new student!"
-            )
-            show_registration = True
-
     if show_registration:
         with st.container(border=True):
             st.header("Register new Profile")
