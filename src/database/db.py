@@ -130,9 +130,32 @@ def get_student_subjects(student_id):
 
 
 def get_student_attendance(student_id):
-    response = supabase.table('attendance_logs').select('*, subjects(*)').eq('student_id', student_id).execute()
-    return response.data
+    records = []
+    last_id = None
+    page_size = 500
 
+    while True:
+        query = (
+            supabase.table("attendance_logs")
+            .select("*, subjects(*)")
+            .eq("student_id", student_id)
+            .order("id")
+        )
+
+        if last_id is not None:
+            query = query.gt("id", last_id)
+
+        response = query.range(0, page_size - 1).execute()
+        page = response.data
+
+        if page is None:
+            raise RuntimeError("Student attendance could not be loaded.")
+
+        if not page:
+            return records
+
+        records.extend(page)
+        last_id = page[-1]["id"]
 
 def create_attendance(logs):
     if not logs:
@@ -180,14 +203,32 @@ def create_attendance(logs):
     return response.data
 
 def get_attendance_for_teacher(teacher_id):
-    response = (
-        supabase.table("attendance_logs")
-        .select("*, subjects!inner(*), students(name)")
-        .eq("subjects.teacher_id", teacher_id)
-        .execute()
-    )
+    records = []
+    last_id = None
+    page_size = 500
 
-    return response.data or []
+    while True:
+        query = (
+            supabase.table("attendance_logs")
+            .select("*, subjects!inner(*), students(name)")
+            .eq("subjects.teacher_id", teacher_id)
+            .order("id")
+        )
+
+        if last_id is not None:
+            query = query.gt("id", last_id)
+
+        response = query.range(0, page_size - 1).execute()
+        page = response.data
+
+        if page is None:
+            raise RuntimeError("Attendance records could not be loaded.")
+
+        if not page:
+            return records
+
+        records.extend(page)
+        last_id = page[-1]["id"]
 
 def delete_subject(subject_id, teacher_id):
     """Delete an owned subject and cascade its dependent records.
