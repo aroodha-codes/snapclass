@@ -72,46 +72,79 @@ def create_subject(subject_code, name, section, teacher_id):
     return response.data
 
 def get_teacher_subjects(teacher_id):
-    response = (
-        supabase.table("subjects")
-        .select(
-            "*, subject_students(count), "
-            "attendance_logs(session_id, timestamp)"
+    subjects = []
+    last_subject_id = None
+    page_size = 500
+
+    # Load all subjects belonging to this teacher.
+    while True:
+        query = (
+            supabase.table("subjects")
+            .select("*, subject_students(count)")
+            .eq("teacher_id", teacher_id)
+            .order("subject_id")
         )
-        .eq("teacher_id", teacher_id)
-        .execute()
-    )
 
-    subjects = response.data or []
+        if last_subject_id is not None:
+            query = query.gt("subject_id", last_subject_id)
 
-    for sub in subjects:
-        enrollment_counts = sub.get("subject_students") or []
+        response = query.range(0, page_size - 1).execute()
+        page = response.data
 
-        sub["total_students"] = (
+        if page is None:
+            raise RuntimeError("Subjects could not be loaded.")
+
+        if not page:
+            break
+
+        subjects.extend(page)
+        last_subject_id = page[-1]["subject_id"]
+
+    if not subjects:
+        return []
+
+    # Reuse the paginated attendance function from the previous fix.
+    attendance_records = get_attendance_for_teacher(teacher_id)
+
+    sessions_by_subject = {
+        subject["subject_id"]: set()
+        for subject in subjects
+    }
+
+    for record in attendance_records:
+        subject_id = record.get("subject_id")
+
+        if subject_id not in sessions_by_subject:
+            continue
+
+        session_id = record.get("session_id")
+        timestamp = record.get("timestamp")
+
+        if session_id:
+            sessions_by_subject[subject_id].add(
+                ("session", session_id)
+            )
+        elif timestamp:
+            sessions_by_subject[subject_id].add(
+                ("legacy", timestamp)
+            )
+
+    for subject in subjects:
+        enrollment_counts = subject.get("subject_students") or []
+
+        subject["total_students"] = (
             enrollment_counts[0].get("count", 0)
             if enrollment_counts
             else 0
         )
 
-        attendance = sub.get("attendance_logs") or []
-        unique_sessions = set()
+        subject["total_classes"] = len(
+            sessions_by_subject[subject["subject_id"]]
+        )
 
-        for log in attendance:
-            session_id = log.get("session_id")
-            timestamp = log.get("timestamp")
-
-            if session_id:
-                unique_sessions.add(("session", session_id))
-            elif timestamp:
-                unique_sessions.add(("legacy", timestamp))
-
-        sub["total_classes"] = len(unique_sessions)
-
-        sub.pop("subject_students", None)
-        sub.pop("attendance_logs", None)
+        subject.pop("subject_students", None)
 
     return subjects
-
 def  enroll_student_to_subject(student_id, subject_id):
     data = {'student_id': student_id, "subject_id": subject_id}
     response= supabase.table('subject_students').insert(data).execute()
