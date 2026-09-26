@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timezone
 from uuid import uuid4
 import hashlib
+from src.database.db import get_subject_enrollments
 
 from src.pipelines.voice_pipeline import process_bulk_audio
 from src.database.config import supabase
@@ -73,14 +74,18 @@ def voice_attendance_dialog(selected_subject_id):
         st.session_state.voice_attendance_results = None
 
         with st.spinner("Processing audio data"):
-            enrolled_res = (
-                supabase.table("subject_students")
-                .select("*, students(*)")
-                .eq("subject_id", selected_subject_id)
-                .execute()
-            )
-
-            enrolled_students = enrolled_res.data or []
+            try:
+                enrolled_students = get_subject_enrollments(
+                    selected_subject_id
+                )
+            except Exception:
+                st.error(
+                    "Could not load the complete enrollment list. "
+                    "No attendance preview was created. Please retry. "
+                    "If this continues, ask the administrator to "
+                    "check for duplicate or invalid enrollments."
+                )
+                return
 
             if not enrolled_students:
                 st.warning("No students enrolled in this course")

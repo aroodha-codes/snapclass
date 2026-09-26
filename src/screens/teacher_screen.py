@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timezone
 from uuid import uuid4
+from src.database.db import get_subject_enrollments
 
 from src.ui.base_layout import (
     style_background_dashboard,
@@ -300,14 +301,18 @@ def teacher_tab_take_attendance():
                     )
                     return
 
-                enrolled_res = (
-                    supabase.table("subject_students")
-                    .select("*, students(*)")
-                    .eq("subject_id", selected_subject_id)
-                    .execute()
-                )
-
-                enrolled_students = enrolled_res.data
+                try:
+                    enrolled_students = get_subject_enrollments(
+                        selected_subject_id
+                    )
+                except Exception:
+                    st.error(
+                        "Could not load the complete enrollment list. "
+                        "No attendance preview was created. Please retry. "
+                        "If this continues, ask the administrator to "
+                        "check for duplicate or invalid enrollments."
+                    )
+                    return
 
                 if not enrolled_students:
                     st.warning("No students enrolled in this course")

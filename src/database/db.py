@@ -286,9 +286,65 @@ def delete_subject(subject_id, teacher_id):
         )
 
     return response.data
+def get_subject_enrollments(
+    subject_id,
+    columns="*, students(*)",
+):
+    enrollments = []
+    offset = 0
+    page_size = 500
+    expected_count = None
+    seen_students = set()
 
+    while True:
+        response = (
+            supabase.table("subject_students")
+            .select(columns, count="exact")
+            .eq("subject_id", subject_id)
+            .order("student_id")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+
+        page = response.data
+        total = response.count
+
+        if page is None or total is None:
+            raise RuntimeError(
+                "Enrollment records could not be loaded."
+            )
+
+        if expected_count is None:
+            expected_count = total
+        elif total != expected_count:
+            raise RuntimeError(
+                "Enrollments changed while loading. Please retry."
+            )
+
+        for row in page:
+            student_id = row.get("student_id")
+
+            if student_id is None or student_id in seen_students:
+                raise RuntimeError(
+                    "Duplicate or invalid enrollment records found. "
+                    "Please ask the administrator to check this subject."
+                )
+
+            seen_students.add(student_id)
+
+        enrollments.extend(page)
+        offset += len(page)
+
+        if offset == expected_count:
+            return enrollments
+
+        if not page or offset > expected_count:
+            raise RuntimeError(
+                "Enrollment loading was incomplete. Please retry."
+            )
+            
 def get_subject_students(subject_id, teacher_id):
-    # Verify that the subject belongs to the current teacher.
+    # Preserve the existing ownership check.
     subject_response = (
         supabase.table("subjects")
         .select("subject_id")
@@ -300,11 +356,7 @@ def get_subject_students(subject_id, teacher_id):
     if not subject_response.data:
         raise ValueError("Subject not found or access denied.")
 
-    response = (
-        supabase.table("subject_students")
-        .select("student_id, students(name)")
-        .eq("subject_id", subject_id)
-        .execute()
+    return get_subject_enrollments(
+        subject_id,
+        columns="student_id, students(name)",
     )
-
-    return response.data or []
