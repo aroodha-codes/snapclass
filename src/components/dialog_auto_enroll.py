@@ -1,20 +1,33 @@
+import time
+
 import streamlit as st
+
 from src.database.db import enroll_student_to_subject
 from src.database.config import supabase
-
-import time
 
 
 @st.dialog("Quick Enrollment")
 def auto_enroll_dialog(subject_code):
     student_id = st.session_state.student_data["student_id"]
 
-    res = (
-        supabase.table("subjects")
-        .select("subject_id, name")
-        .eq("subject_code", subject_code)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("subjects")
+            .select("subject_id, name")
+            .eq("subject_code", subject_code)
+            .execute()
+        )
+    except Exception:
+        st.error(
+            "Could not check the subject right now. "
+            "Please check your connection and reopen the link."
+        )
+
+        if st.button("Close"):
+            st.query_params.clear()
+            st.rerun()
+
+        return
 
     if not res.data:
         st.error("Subject Code not found!")
@@ -25,7 +38,6 @@ def auto_enroll_dialog(subject_code):
 
         return
 
-    # Do not select an arbitrary subject when the code is duplicated.
     if len(res.data) > 1:
         st.error(
             "This subject code matches more than one subject. "
@@ -41,13 +53,25 @@ def auto_enroll_dialog(subject_code):
 
     subject = res.data[0]
 
-    check = (
-        supabase.table("subject_students")
-        .select("*")
-        .eq("subject_id", subject["subject_id"])
-        .eq("student_id", student_id)
-        .execute()
-    )
+    try:
+        check = (
+            supabase.table("subject_students")
+            .select("*")
+            .eq("subject_id", subject["subject_id"])
+            .eq("student_id", student_id)
+            .execute()
+        )
+    except Exception:
+        st.error(
+            "Could not check your enrollment right now. "
+            "Please check your connection and reopen the link."
+        )
+
+        if st.button("Close"):
+            st.query_params.clear()
+            st.rerun()
+
+        return
 
     if check.data:
         st.info("Youre already enrolled!")
@@ -75,10 +99,25 @@ def auto_enroll_dialog(subject_code):
             type="primary",
             width="stretch",
         ):
-            enroll_student_to_subject(
-                student_id,
-                subject["subject_id"],
-            )
+            try:
+                result = enroll_student_to_subject(
+                    student_id,
+                    subject["subject_id"],
+                )
+            except Exception:
+                st.error(
+                    "Enrollment could not be confirmed. "
+                    "Check your enrolled subjects before trying again."
+                )
+                return
+
+            if not result:
+                st.warning(
+                    "No enrollment confirmation was returned. "
+                    "Check your enrolled subjects before trying again."
+                )
+                return
+
             st.success("Joined succesfully!")
             st.query_params.clear()
             time.sleep(2)
