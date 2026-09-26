@@ -659,9 +659,7 @@ def teacher_screen_login():
             width="stretch",
         ):
             st.session_state.teacher_login_type = "register"
-
-    footer_dashboard()
-
+            st.rerun()
 
 def register_teacher(
     teacher_username,
@@ -777,5 +775,5 @@ def teacher_screen_register():
             width="stretch",
         ):
             st.session_state.teacher_login_type = "login"
-
+            st.rerun()
     footer_dashboard()
