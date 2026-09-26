@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 @st.dialog("Capture or upload photos")
@@ -49,8 +49,7 @@ def add_photos_dialog():
                 cam_photo.seek(0)
 
                 with Image.open(cam_photo) as image:
-                    photo = image.convert("RGB")
-
+                    photo = ImageOps.exif_transpose(image).convert("RGB")
             except (
                 OSError,
                 ValueError,
@@ -84,8 +83,9 @@ def add_photos_dialog():
                     uploaded_file.seek(0)
 
                     with Image.open(uploaded_file) as image:
-                        photos.append(image.convert("RGB"))
-
+                        photos.append(
+                            ImageOps.exif_transpose(image).convert("RGB")
+                        )
                 except (
                     OSError,
                     ValueError,
