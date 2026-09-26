@@ -151,7 +151,18 @@ def teacher_tab_take_attendance():
     if "attendance_images" not in st.session_state:
         st.session_state.attendance_images = []
 
-    subjects = get_teacher_subjects(teacher_id)
+    try:
+        subjects = get_teacher_subjects(teacher_id)
+    except Exception:
+        st.error(
+            "Could not load your subjects. "
+            "Please check your connection and try again."
+        )
+
+        if st.button("Retry", key="retry_attendance_subjects"):
+            st.rerun()
+
+        return
 
     if not subjects:
         with st.container(
@@ -396,7 +407,18 @@ def teacher_tab_manage_subjects():
         if st.button("Create New Subject", width="stretch"):
             create_subject_dialog(teacher_id)
 
-    subjects = get_teacher_subjects(teacher_id)
+    try:
+        subjects = get_teacher_subjects(teacher_id)
+    except Exception:
+        st.error(
+            "Could not load your subjects and class counts. "
+            "Please check your connection and try again."
+        )
+
+        if st.button("Retry", key="retry_manage_subjects"):
+            st.rerun()
+
+        return
 
     if not subjects:
         st.info("NO SUBJECTS FOUND. CREATE ONE ABOVE")
