@@ -72,22 +72,45 @@ def create_subject(subject_code, name, section, teacher_id):
     return response.data
 
 def get_teacher_subjects(teacher_id):
-    response = supabase.table('subjects').select("*, subject_students(count), attendance_logs(timestamp)").eq("teacher_id", teacher_id).execute()
-    subjects = response.data
+    response = (
+        supabase.table("subjects")
+        .select(
+            "*, subject_students(count), "
+            "attendance_logs(session_id, timestamp)"
+        )
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
 
+    subjects = response.data or []
 
     for sub in subjects:
-        sub['total_students'] = sub.get("subject_students", [{}])[0].get('count', 0) if sub.get('subject_students') else 0
-        attendance = sub.get('attendance_logs', [])
-        unique_sessions = len(set(log['timestamp'] for log in attendance))
-        sub['total_classes'] = unique_sessions
+        enrollment_counts = sub.get("subject_students") or []
 
+        sub["total_students"] = (
+            enrollment_counts[0].get("count", 0)
+            if enrollment_counts
+            else 0
+        )
 
-        sub.pop('subject_student', None)
-        sub.pop('attendance_logs', None)
+        attendance = sub.get("attendance_logs") or []
+        unique_sessions = set()
+
+        for log in attendance:
+            session_id = log.get("session_id")
+            timestamp = log.get("timestamp")
+
+            if session_id:
+                unique_sessions.add(("session", session_id))
+            elif timestamp:
+                unique_sessions.add(("legacy", timestamp))
+
+        sub["total_classes"] = len(unique_sessions)
+
+        sub.pop("subject_students", None)
+        sub.pop("attendance_logs", None)
 
     return subjects
-
 
 def  enroll_student_to_subject(student_id, subject_id):
     data = {'student_id': student_id, "subject_id": subject_id}
