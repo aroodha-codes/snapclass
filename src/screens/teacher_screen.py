@@ -650,26 +650,35 @@ def register_teacher(
     teacher_pass,
     teacher_pass_confirm,
 ):
-    if not teacher_username or not teacher_name or not teacher_pass:
-        return False, "All Fields are required!"
+    teacher_username = teacher_username.strip()
+    teacher_name = teacher_name.strip()
 
-    if check_teacher_exists(teacher_username):
-        return False, "Username already taken"
+    if not teacher_username or not teacher_name:
+        return False, "Please enter a valid username and name."
+
+    if not teacher_pass or not teacher_pass.strip():
+        return False, "Password cannot be empty or contain only spaces."
 
     if teacher_pass != teacher_pass_confirm:
-        return False, "Password doesn't match"
+        return False, "Passwords do not match."
 
     try:
+        if check_teacher_exists(teacher_username):
+            return False, "Username already taken."
+
         create_teacher(
             teacher_username,
             teacher_pass,
             teacher_name,
         )
-        return True, "Sucessfully Created! Login Now"
+
     except Exception:
-        return False, "Unexpected Error!"
+        return False, (
+            "Registration could not be confirmed. "
+            "Please try logging in before attempting registration again."
+        )
 
-
+    return True, "Successfully created! Login now."
 def teacher_screen_register():
     c1, c2 = st.columns(
         2,
