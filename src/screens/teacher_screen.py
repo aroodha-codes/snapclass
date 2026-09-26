@@ -564,18 +564,25 @@ def teacher_tab_attendance_records():
 
 
 def login_teacher(username, password):
+    username = username.strip()
+
     if not username or not password:
         return False
 
-    teacher = teacher_login(username, password)
+    try:
+        teacher = teacher_login(username, password)
+    except Exception:
+        # None distinguishes a service error from invalid credentials.
+        return None
 
-    if teacher:
-        st.session_state.user_role = "teacher"
-        st.session_state.teacher_data = teacher
-        st.session_state.is_logged_in = True
-        return True
+    if not teacher:
+        return False
 
-    return False
+    st.session_state.user_role = "teacher"
+    st.session_state.teacher_data = teacher
+    st.session_state.is_logged_in = True
+
+    return True
 
 
 def teacher_screen_login():
@@ -615,7 +622,6 @@ def teacher_screen_login():
     st.divider()
 
     btnc1, btnc2 = st.columns(2)
-
     with btnc1:
         if st.button(
             "Login",
@@ -623,12 +629,25 @@ def teacher_screen_login():
             shortcut="control+enter",
             width="stretch",
         ):
-            if login_teacher(teacher_username, teacher_pass):
+            login_result = login_teacher(
+                teacher_username,
+                teacher_pass,
+            )
+
+            if login_result is None:
+                st.error(
+                    "Login is temporarily unavailable. "
+                    "Please check your connection and try again."
+                )
+
+            elif login_result:
                 st.toast("welcome back!", icon="👋")
+
                 import time
 
                 time.sleep(1)
                 st.rerun()
+
             else:
                 st.error("Invalid username and password combo")
 
