@@ -315,34 +315,6 @@ def student_screen():
                             )
                         ) > 1
 
-                        with st.expander("Match details (troubleshooting)"):
-                            st.write(
-                                "Registered face profiles:",
-                                len(profiles),
-                            )
-                            st.write(
-                                "Login distance threshold:",
-                                login_threshold,
-                            )
-
-                            st.dataframe(
-                                [
-                                    {
-                                        "Student ID": str(
-                                            profiles[int(i)]["student_id"]
-                                        ),
-                                        "Name": profiles[int(i)].get(
-                                            "name", ""
-                                        ),
-                                        "Distance": round(
-                                            float(distances[i]), 6
-                                        ),
-                                    }
-                                    for i in np.argsort(distances)[:5]
-                                ],
-                                hide_index=True,
-                            )
-
                         if tied:
                             st.warning(
                                 "Multiple profiles have the same closest "
