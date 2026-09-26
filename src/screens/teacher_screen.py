@@ -462,8 +462,14 @@ def teacher_tab_attendance_records():
             continue
 
         # Preserve the complete timestamp, including fractional seconds.
-        session_key = (subject_id, timestamp)
+        session_id = record.get("session_id")
 
+        if session_id:
+            # New records: group by the unique attendance session.
+            session_key = (subject_id, "session", session_id)
+        else:
+            # Historical records do not have a session ID.
+            session_key = (subject_id, "legacy", timestamp)
         if session_key not in sessions:
             sessions[session_key] = {
                 "timestamp": timestamp,
