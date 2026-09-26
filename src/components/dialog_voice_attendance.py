@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from uuid import uuid4
+import hashlib
 
 from src.pipelines.voice_pipeline import process_bulk_audio
 from src.database.config import supabase
@@ -32,7 +33,24 @@ def voice_attendance_dialog(selected_subject_id):
         "Record classroom audio",
         key=f"voice_audio_{selected_subject_id}",
     )
+    # Keep results only while the subject and recording remain unchanged.
+    recording_hash = (
+        hashlib.sha256(audio_data.getvalue()).hexdigest()
+        if audio_data is not None
+        else None
+    )
 
+    recording_context = (
+        selected_subject_id,
+        recording_hash,
+    )
+
+    if (
+        st.session_state.get("voice_recording_context")
+        != recording_context
+    ):
+        st.session_state.voice_attendance_results = None
+        st.session_state["voice_recording_context"] = recording_context
     if st.button(
         "Analyze Audio",
         width="stretch",
