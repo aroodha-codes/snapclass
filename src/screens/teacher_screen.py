@@ -142,19 +142,50 @@ def teacher_tab_take_attendance():
 
         return
     
-    subject_options = {f"{s['name']} - {s['subject_code']}": s['subject_id'] for s in subjects}
+    subject_options = {
+        f"{s['name']} - {s['subject_code']}": s["subject_id"]
+        for s in subjects
+    }
 
-    col1, col2 = st.columns([3,1], vertical_alignment='bottom')
+    col1, col2 = st.columns(
+        [3, 1],
+        vertical_alignment="bottom",
+    )
 
     with col1:
-        selected_subject_label = st.selectbox('Select Subject', options=list(subject_options.keys()))
-
-    with col2:
-        if st.button('Add Photos', type='primary', icon=':material/photo_prints:', width='stretch'):
-            add_photos_dialog()
+        selected_subject_label = st.selectbox(
+            "Select Subject",
+            options=list(subject_options.keys()),
+        )
 
     selected_subject_id = subject_options[selected_subject_label]
 
+    # Photos belong to this teacher and this subject.
+    attendance_context = (teacher_id, selected_subject_id)
+
+    if (
+        st.session_state.get("attendance_photo_context")
+        != attendance_context
+    ):
+        st.session_state["attendance_images"] = []
+        st.session_state["voice_attendance_results"] = None
+
+        # Prevent previous photo inputs from being reused.
+        st.session_state.pop("dialog_cam", None)
+        st.session_state.pop("dialog_upload", None)
+
+        st.session_state["attendance_photo_context"] = (
+            attendance_context
+        )
+
+    with col2:
+        if st.button(
+            "Add Photos",
+            type="primary",
+            icon=":material/photo_prints:",
+            width="stretch",
+        ):
+            add_photos_dialog()
     st.divider()
 
     if st.session_state.attendance_images:
