@@ -67,19 +67,43 @@ def voice_attendance_dialog(selected_subject_id):
                 st.warning("No students enrolled in this course")
                 return
 
-            candidates_dict = {
-                node["students"]["student_id"]:
-                    node["students"]["voice_embedding"]
-                for node in enrolled_students
-                if node["students"].get("voice_embedding")
-            }
+            candidates_dict = {}
+            missing_profiles = []
 
-            if not candidates_dict:
-                st.error(
-                    "No enrolled students have voice profiles registered"
+            for node in enrolled_students:
+                student = node.get("students")
+
+                if not student or student.get("student_id") is None:
+                    st.error(
+                        "An enrolled student's profile could not be loaded. "
+                        "No attendance results were created. Please retry."
+                    )
+                    return
+
+                embedding = student.get("voice_embedding")
+
+                if not embedding:
+                    missing_profiles.append(
+                        f"{student.get('name') or 'Unnamed student'} "
+                        f"(ID: {student['student_id']})"
+                    )
+                else:
+                    candidates_dict[student["student_id"]] = embedding
+
+            if missing_profiles:
+                st.warning(
+                    "Voice attendance requires a registered voice profile "
+                    "for every enrolled student. No attendance results "
+                    "were created or saved. Use face attendance for this "
+                    "session or register the missing voice profiles first."
                 )
-                return
 
+                st.write("Students without a voice profile:")
+
+                for label in missing_profiles:
+                    st.text(label)
+
+                return
             detected_scores = process_bulk_audio(
                 audio_bytes,
                 candidates_dict,
