@@ -191,8 +191,11 @@ def teacher_tab_take_attendance():
         return
 
     subject_options = {
-        f"{s['name']} - {s['subject_code']}": s["subject_id"]
-        for s in subjects
+        subject["subject_id"]: (
+            f"{subject['name']} - {subject['subject_code']} "
+            f"(ID: {subject['subject_id']})"
+        )
+        for subject in subjects
     }
 
     col1, col2 = st.columns(
@@ -201,13 +204,11 @@ def teacher_tab_take_attendance():
     )
 
     with col1:
-        selected_subject_label = st.selectbox(
+        selected_subject_id = st.selectbox(
             "Select Subject",
             options=list(subject_options.keys()),
+            format_func=lambda subject_id: subject_options[subject_id],
         )
-
-    selected_subject_id = subject_options[selected_subject_label]
-
     # Photos belong to this teacher and this subject.
     attendance_context = (teacher_id, selected_subject_id)
 
