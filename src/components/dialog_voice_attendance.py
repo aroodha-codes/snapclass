@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from uuid import uuid4
 
 from src.pipelines.voice_pipeline import process_bulk_audio
 from src.database.config import supabase
@@ -118,6 +119,7 @@ def voice_attendance_dialog(selected_subject_id):
 
             results = []
             attendance_to_log = []
+            session_id = str(uuid4())            
 
             current_timestamp = datetime.now().strftime(
                 "%Y-%m-%dT%H:%M:%S"
@@ -141,6 +143,7 @@ def voice_attendance_dialog(selected_subject_id):
                 })
 
                 attendance_to_log.append({
+                    "session_id": session_id,
                     "student_id": student["student_id"],
                     "subject_id": selected_subject_id,
                     "timestamp": current_timestamp,

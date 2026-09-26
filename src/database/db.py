@@ -112,7 +112,48 @@ def get_student_attendance(student_id):
 
 
 def create_attendance(logs):
-    response = supabase.table('attendance_logs').insert(logs).execute()
+    if not logs:
+        raise ValueError("No attendance records to save.")
+
+    session_id = logs[0].get("session_id")
+    subject_id = logs[0].get("subject_id")
+    timestamp = logs[0].get("timestamp")
+
+    if not session_id or subject_id is None or not timestamp:
+        raise ValueError(
+            "Attendance session details are missing. Run analysis again."
+        )
+
+    seen_students = set()
+
+    for log in logs:
+        student_id = log.get("student_id")
+
+        if (
+            log.get("session_id") != session_id
+            or log.get("subject_id") != subject_id
+            or log.get("timestamp") != timestamp
+            or student_id is None
+            or student_id in seen_students
+            or not isinstance(log.get("is_present"), bool)
+        ):
+            raise ValueError(
+                "Attendance records contain invalid or mixed session data."
+            )
+
+        seen_students.add(student_id)
+
+    response = (
+        supabase.table("attendance_logs")
+        .upsert(
+            logs,
+            on_conflict="session_id,student_id",
+            ignore_duplicates=True,
+            default_to_null=False,
+        )
+        .execute()
+    )
+
     return response.data
 
 def get_attendance_for_teacher(teacher_id):
