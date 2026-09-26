@@ -68,10 +68,28 @@ def student_dashboard():
 
     st.divider()
 
-    with st.spinner("Loading your enrolled subjects.."):
-        subjects = get_student_subjects(student_id)
-        logs = get_student_attendance(student_id)
+    try:
+        with st.spinner("Loading your enrolled subjects.."):
+            subjects = get_student_subjects(student_id)
+            logs = get_student_attendance(student_id)
 
+        if subjects is None or logs is None:
+            raise RuntimeError("Student dashboard data is unavailable.")
+
+    except Exception:
+        st.error(
+            "Could not load your subjects and attendance. "
+            "Please check your connection and try again."
+        )
+
+        if st.button(
+            "Retry",
+            key="retry_student_dashboard",
+        ):
+            st.rerun()
+
+        footer_dashboard()
+        return
     stats_map = {}
 
     for log in logs:
