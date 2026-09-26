@@ -34,9 +34,32 @@ def teacher_login(username, password):
 
 
 def get_all_students():
-    response = supabase.table('students').select("*").execute()
-    return response.data
+    students = []
+    last_student_id = None
+    page_size = 500
 
+    while True:
+        query = (
+            supabase.table("students")
+            .select("*")
+            .order("student_id")
+        )
+
+        if last_student_id is not None:
+            query = query.gt("student_id", last_student_id)
+
+        response = query.range(0, page_size - 1).execute()
+        page = response.data
+
+        if page is None:
+            raise RuntimeError("Student profiles could not be loaded.")
+
+        if not page:
+            return students
+
+        students.extend(page)
+        last_student_id = page[-1]["student_id"]
+        
 def create_student(new_name, face_embedding=None, voice_embedding=None):
     data = {'name': new_name, 'face_embedding':face_embedding, "voice_embedding": voice_embedding}
     response = supabase.table('students').insert(data).execute()
