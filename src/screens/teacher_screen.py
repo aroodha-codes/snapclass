@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from src.ui.base_layout import (
@@ -317,8 +317,8 @@ def teacher_tab_take_attendance():
                 attendance_to_log = []
                 session_id = str(uuid4())
 
-                current_timestamp = datetime.now().strftime(
-                    "%Y-%m-%dT%H:%M:%S"
+                current_timestamp = datetime.now(timezone.utc).isoformat(
+                    timespec="microseconds"
                 )
 
                 for node in enrolled_students:
