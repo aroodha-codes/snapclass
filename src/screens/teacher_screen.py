@@ -276,22 +276,33 @@ def teacher_tab_take_attendance():
                 all_detected_ids = {}
                 total_faces = 0
 
-                for idx, img in enumerate(
-                    st.session_state.attendance_images
-                ):
-                    img_np = np.array(img.convert("RGB"))
+                try:
+                    for idx, img in enumerate(
+                        st.session_state.attendance_images
+                    ):
+                        img_np = np.array(img.convert("RGB"))
 
-                    detected, _, num_faces = predict_attendance(img_np)
-                    total_faces += num_faces
+                        detected, _, num_faces = predict_attendance(
+                            img_np
+                        )
+                        total_faces += num_faces
 
-                    if detected:
-                        for sid in detected.keys():
-                            student_id = int(sid)
+                        if detected:
+                            for sid in detected.keys():
+                                student_id = int(sid)
 
-                            all_detected_ids.setdefault(
-                                student_id, []
-                            ).append(f"Photo {idx + 1}")
+                                all_detected_ids.setdefault(
+                                    student_id, []
+                                ).append(f"Photo {idx + 1}")
 
+                except Exception:
+                    st.error(
+                        "Face analysis could not be completed. "
+                        "No attendance preview was created or saved. "
+                        "Please retry. If this continues, check the "
+                        "photos, database connection, and stored face profiles."
+                    )
+                    return
                 # Stop before building attendance if every photo has no faces.
                 if total_faces == 0:
                     st.warning(
