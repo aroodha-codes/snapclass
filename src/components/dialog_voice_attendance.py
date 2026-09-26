@@ -112,11 +112,11 @@ def voice_attendance_dialog(selected_subject_id):
             if detected_scores is None:
                 st.session_state.voice_attendance_results = None
                 st.error(
-                    "Audio processing failed. No attendance results were "
-                    "created or saved. Please record again and retry."
+                    "The recording could not be analyzed or did not contain "
+                    "enough usable speech. No attendance preview was created "
+                    "or saved. Record clear speech and try again."
                 )
                 return
-
             results = []
             attendance_to_log = []
             session_id = str(uuid4())            
