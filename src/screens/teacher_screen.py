@@ -708,7 +708,7 @@ def teacher_screen_login():
         ):
             st.session_state.teacher_login_type = "register"
             st.rerun()
-
+    footer_dashboard()
 def register_teacher(
     teacher_username,
     teacher_name,
