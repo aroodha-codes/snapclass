@@ -181,9 +181,7 @@ def student_screen():
                     Image.open(photo_source).convert("RGB")
                 )
 
-                with st.spinner(
-                    "Checking your registration photo..."
-                ):
+                with st.spinner("Checking your registration photo..."):
                     registration_faces = get_face_embeddings(
                         registration_image
                     )
@@ -287,9 +285,7 @@ def student_screen():
                         )
 
                         best_index = int(np.argmin(distances))
-                        best_distance = float(
-                            distances[best_index]
-                        )
+                        best_distance = float(distances[best_index])
                         matched_student = profiles[best_index]
 
                         tied = np.count_nonzero(
@@ -301,9 +297,7 @@ def student_screen():
                             )
                         ) > 1
 
-                        with st.expander(
-                            "Match details (troubleshooting)"
-                        ):
+                        with st.expander("Match details (troubleshooting)"):
                             st.write(
                                 "Registered face profiles:",
                                 len(profiles),
@@ -359,9 +353,7 @@ def student_screen():
                             ):
                                 st.session_state.is_logged_in = True
                                 st.session_state.user_role = "student"
-                                st.session_state.student_data = (
-                                    matched_student
-                                )
+                                st.session_state.student_data = matched_student
                                 st.rerun()
 
             except ValueError as exc:
@@ -416,9 +408,7 @@ def student_screen():
                         Image.open(photo_source).convert("RGB")
                     )
 
-                    with st.spinner(
-                        "Checking your enrollment photo..."
-                    ):
+                    with st.spinner("Checking your enrollment photo..."):
                         encodings = get_face_embeddings(img)
 
                 except Exception:
@@ -433,6 +423,71 @@ def student_screen():
                     st.warning(
                         "Registration requires exactly one visible "
                         "face. Please take another photo."
+                    )
+                    footer_dashboard()
+                    return
+
+                # Check fresh database profiles before creating an account.
+                try:
+                    with st.spinner("Checking for an existing face profile..."):
+                        query = np.asarray(
+                            encodings[0],
+                            dtype=np.float64,
+                        )
+
+                        if (
+                            query.shape != (128,)
+                            or not np.all(np.isfinite(query))
+                        ):
+                            raise ValueError(
+                                "Invalid captured face embedding"
+                            )
+
+                        profiles = get_all_students()
+
+                        if profiles is None:
+                            raise ValueError(
+                                "Student profiles could not be loaded"
+                            )
+
+                        duplicate_found = False
+
+                        for student in profiles:
+                            stored = np.asarray(
+                                student.get("face_embedding"),
+                                dtype=np.float64,
+                            )
+
+                            if (
+                                stored.shape != (128,)
+                                or not np.all(np.isfinite(stored))
+                            ):
+                                raise ValueError(
+                                    "Invalid stored face embedding"
+                                )
+
+                            distance = float(
+                                np.linalg.norm(stored - query)
+                            )
+
+                            if distance <= login_threshold:
+                                duplicate_found = True
+
+                except Exception:
+                    st.error(
+                        "Could not safely check existing face profiles. "
+                        "No new profile was created. Please retry or ask "
+                        "the administrator to check the stored profiles."
+                    )
+                    footer_dashboard()
+                    return
+
+                if duplicate_found:
+                    st.warning(
+                        "This photo closely matches an existing face profile. "
+                        "No new profile was created. If you already registered, "
+                        "select 'Log in'. Otherwise, retake your photo or ask "
+                        "the administrator to review the match."
                     )
                     footer_dashboard()
                     return
